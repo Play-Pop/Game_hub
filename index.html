@@ -1,0 +1,271 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Play Pop</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Pacifico&display=swap');
+    body {
+      margin: 0;
+      font-family: 'Poppins', sans-serif;
+      background: linear-gradient(135deg, #1e0f47, #441173, #b21f66);
+      color: white;
+      overflow-x: hidden;
+    }
+    h1 {
+      text-align: center;
+      font-size: 3.5rem;
+      margin-top: 30px;
+      font-family: 'Pacifico', cursive;
+      color: #ff3b3b;
+      text-shadow: 0 0 20px rgba(255,0,0,0.5);
+    }
+    .game-container {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+      gap: 25px;
+      padding: 30px;
+      max-width: 1100px;
+      margin: auto;
+    }
+    .game-card {
+      border-radius: 20px;
+      padding: 15px;
+      text-align: center;
+      color: white;
+      box-shadow: 0 8px 20px rgba(0,0,0,0.3);
+      transition: transform 0.2s, box-shadow 0.2s;
+      background: linear-gradient(135deg, #6a11cb, #2575fc);
+      position: relative;
+    }
+    .game-card:hover {
+      transform: scale(1.05);
+      box-shadow: 0 12px 30px rgba(0,0,0,0.4);
+    }
+    .game-thumbnail {
+      width: 100%;
+      height: 150px;
+      object-fit: cover;
+      border-radius: 15px;
+      margin-bottom: 10px;
+    }
+    .game-card h3 {
+      margin: 10px 0 5px;
+      font-size: 1.3rem;
+    }
+    .game-card p {
+      font-size: 0.9rem;
+      opacity: 0.85;
+    }
+    .buttons {
+      display: flex;
+      justify-content: center;
+      gap: 8px;
+      margin-top: 12px;
+    }
+    .buttons button, .buttons a {
+      background: rgba(255,255,255,0.2);
+      border: none;
+      padding: 8px 15px;
+      border-radius: 10px;
+      color: white;
+      cursor: pointer;
+      transition: all 0.3s;
+      text-decoration: none;
+      font-weight: bold;
+    }
+    .buttons button:hover, .buttons a:hover {
+      background: rgba(255,255,255,0.4);
+    }
+    .add-game {
+      display: none;
+      max-width: 600px;
+      margin: 40px auto;
+      background: rgba(255,255,255,0.15);
+      border-radius: 15px;
+      padding: 20px;
+      box-shadow: 0 8px 20px rgba(0,0,0,0.3);
+    }
+    .add-game input, .add-game textarea {
+      width: 100%;
+      margin-bottom: 12px;
+      padding: 10px;
+      border-radius: 8px;
+      border: none;
+      outline: none;
+    }
+    .add-game button {
+      background: linear-gradient(135deg, #6a11cb, #2575fc);
+      color: white;
+      border: none;
+      padding: 10px 15px;
+      border-radius: 10px;
+      cursor: pointer;
+      width: 100%;
+      font-weight: bold;
+      transition: background 0.3s;
+    }
+    .add-game button:hover {
+      background: linear-gradient(135deg, #4a00e0, #8e2de2);
+    }
+    .top-bar {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      gap: 15px;
+      background: rgba(255,255,255,0.1);
+      padding: 15px;
+      border-radius: 0 0 30px 30px;
+      backdrop-filter: blur(10px);
+    }
+    .top-bar span {
+      font-size: 1.1rem;
+      font-weight: bold;
+    }
+    /* Hidden Creator Unlock Zone */
+    #unlockZone {
+      position: fixed;
+      bottom: 5px;
+      right: 5px;
+      width: 25px;
+      height: 25px;
+      opacity: 0.1;
+      background: transparent;
+      cursor: pointer;
+      border-radius: 50%;
+    }
+    #unlockZone:hover {
+      opacity: 0.3;
+      background: rgba(255,255,255,0.1);
+    }
+  </style>
+</head>
+<body>
+  <div class="top-bar">
+    <span>🎮 Play Pop</span>
+    <span>| Your Mini Game Hub</span>
+  </div>
+
+  <h1>Play Pop</h1>
+
+  <!-- Add Game Form (hidden by default) -->
+  <div id="addGameForm" class="add-game">
+    <input type="text" id="title" placeholder="Game Title" />
+    <textarea id="desc" placeholder="Game Description"></textarea>
+    <input type="text" id="url" placeholder="Game URL" />
+    <input type="text" id="thumb" placeholder="Thumbnail URL (optional)" />
+    <button onclick="addGame()">Add Game</button>
+  </div>
+
+  <!-- Game List -->
+  <div class="game-container" id="gameContainer"></div>
+
+  <!-- Hidden unlock zone -->
+  <div id="unlockZone" title="Hidden Zone"></div>
+
+  <script>
+    // ----- SETTINGS -----
+    const creatorPassword = "navleshonly"; // change this to your password
+    let creatorMode = false;
+
+    // Hidden unlock logic (triple click bottom corner)
+    let clickCount = 0;
+    const unlockZone = document.getElementById("unlockZone");
+    unlockZone.addEventListener("click", () => {
+      clickCount++;
+      if (clickCount >= 3) {
+        const pass = prompt("Enter creator password:");
+        if (pass === creatorPassword) {
+          creatorMode = true;
+          document.getElementById("addGameForm").style.display = "block";
+          alert("✅ Creator mode activated");
+          renderGames();
+        } else {
+          alert("❌ Incorrect password");
+        }
+        clickCount = 0;
+      }
+      setTimeout(() => clickCount = 0, 1500);
+    });
+
+    // ----- GAME DATA -----
+    let games = [
+      {
+        title: "Sample Game 1",
+        description: "Click play to open this game",
+        url: "https://example.com/game1",
+        thumbnail: "https://picsum.photos/400/200?1",
+        color: "linear-gradient(135deg, #6a11cb, #2575fc)"
+      },
+      {
+        title: "Sample Game 2",
+        description: "Add your own games as the creator",
+        url: "https://example.com/game2",
+        thumbnail: "https://picsum.photos/400/200?2",
+        color: "linear-gradient(135deg, #f7971e, #ffd200)"
+      }
+    ];
+
+    // ----- FUNCTIONS -----
+    function renderGames() {
+      const container = document.getElementById("gameContainer");
+      container.innerHTML = "";
+      games.forEach((game, index) => {
+        const div = document.createElement("div");
+        div.className = "game-card";
+        div.style.background = game.color;
+        div.innerHTML = `
+          <img src="${game.thumbnail || 'https://via.placeholder.com/400x200?text=No+Thumbnail'}" class="game-thumbnail" />
+          <h3>${game.title}</h3>
+          <p>${game.description}</p>
+          <div class="buttons">
+            <a href="${game.url}" target="_blank">▶ Play</a>
+            ${creatorMode ? `<button onclick="deleteGame(${index})">🗑️ Remove</button>` : ""}
+          </div>
+        `;
+        container.appendChild(div);
+      });
+    }
+
+    function addGame() {
+      const title = document.getElementById("title").value.trim();
+      const desc = document.getElementById("desc").value.trim();
+      const url = document.getElementById("url").value.trim();
+      const thumb = document.getElementById("thumb").value.trim();
+      if (!title) {
+        alert("Please enter a title");
+        return;
+      }
+      games.push({
+        title,
+        description: desc || "No description",
+        url: url || "#",
+        thumbnail: thumb || "",
+        color: `linear-gradient(135deg, ${randomColor()}, ${randomColor()})`
+      });
+      renderGames();
+      document.getElementById("title").value = "";
+      document.getElementById("desc").value = "";
+      document.getElementById("url").value = "";
+      document.getElementById("thumb").value = "";
+    }
+
+    function deleteGame(index) {
+      if (confirm("Delete this game?")) {
+        games.splice(index, 1);
+        renderGames();
+      }
+    }
+
+    function randomColor() {
+      const colors = ["#6a11cb", "#2575fc", "#f7971e", "#ffd200", "#ff0844", "#ffb199", "#38ef7d", "#11998e"];
+      return colors[Math.floor(Math.random() * colors.length)];
+    }
+
+    // ----- INIT -----
+    renderGames();
+  </script>
+</body>
+</html>
+
